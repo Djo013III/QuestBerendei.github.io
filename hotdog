@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Пароль: ЛИСТВА</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden; font-family: 'Press Start 2P', monospace;
+    background: #1a0f08; color: #ffe8c4; user-select: none;
+  }
+  #forest-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: linear-gradient(#1a0f08 0%, #3d1f0a 35%, #6b3a12 70%, #8a4a18 100%);
+    image-rendering: pixelated; overflow: hidden;
+  }
+  .tree {
+    position: absolute; bottom: 0; width: 80px; height: 200px; background: #c65a1e;
+    clip-path: polygon(50% 0%, 90% 35%, 75% 35%, 95% 65%, 80% 65%, 100% 100%, 0% 100%, 20% 65%, 5% 65%, 25% 35%, 10% 35%);
+    opacity: 0.4; image-rendering: pixelated;
+  }
+  .tree::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 12px; height: 40px; background: #4a2a10; }
+  .tree:nth-child(3n) { background: #d4821e; }
+  .tree:nth-child(3n+1) { background: #a83a0e; }
+  .tree:nth-child(3n+2) { background: #b86a14; }
+  #leaf-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; display: block; width: 100%; height: 100%; }
+  
+  /* --- КОНТЕНТ --- */
+  #app {
+    position: relative; z-index: 2; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center;
+  }
+  .card {
+    background: #2a1408; border: 4px solid #c98a1a; padding: 30px 20px;
+    box-shadow: inset 0 0 0 2px #1a0f08, 0 6px 0 #6b3a0a;
+    width: 100%; max-width: 400px;
+  }
+  .card h1 { font-size: 14px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a; margin-bottom: 20px; line-height: 1.5; }
+  .password {
+    font-size: 24px; color: #ffe8c4; text-shadow: 3px 3px 0 #8a4a08;
+    margin: 20px 0; padding: 15px; background: #1a0f08; border: 2px dashed #c98a1a;
+    letter-spacing: 4px; word-break: break-all;
+  }
+  .hint { font-size: 10px; line-height: 1.6; color: #e8a020; margin-top: 20px; }
+  .back-btn {
+    margin-top: 30px; font-family: 'Press Start 2P', monospace; font-size: 12px;
+    padding: 14px 20px; color: #1a0f08; background: #e8a020; border: none; cursor: pointer;
+    box-shadow: 0 5px 0 #8a4a08, 0 0 0 4px #1a0f08; transition: transform 0.08s;
+    text-decoration: none; display: inline-block;
+  }
+  .back-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #8a4a08, 0 0 0 4px #1a0f08; }
+
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 3; padding: 10px 16px;
+    background: rgba(26, 15, 8, 0.9); border-bottom: 4px solid #8a4a18;
+    font-size: 9px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a;
+  }
+</style>
+</head>
+<body>
+
+<div id="forest-bg"></div>
+<canvas id="leaf-canvas"></canvas>
+
+<div class="header">🍂 ТАЙНЫ БЕРЕНДЕЕВСКОГО ЛЕСА</div>
+
+<div id="app">
+  <div class="card">
+    <h1>📜 ВАШ ПАРОЛЬ ОТ ЗАДАНИЯ</h1>
+    
+    <!-- ВОТ ТУТ МЕНЯЕМ ПАРОЛЬ -->
+    <div class="password">ЛИСТВА</div>
+    
+    <!-- ВОТ ТУТ МЕНЯЕМ ПОДСКАЗКУ -->
+    <div class="hint">
+      Введи это слово на главной странице квеста, чтобы открыть задание «Древесный ребус».
+    </div>
+    
+    <a href="index.html" class="back-btn">← К ВВОДУ ПАРОЛЯ</a>
+  </div>
+</div>
+
+<script>
+  // Скрипт для отрисовки ёлок и листьев (копируем его с главной страницы)
+  const bg = document.getElementById('forest-bg');
+  for (let i = 0; i < 8; i++) {
+    const t = document.createElement('div');
+    t.className = 'tree';
+    t.style.left = (i * 13 + Math.random() * 5) + '%';
+    t.style.height = (140 + Math.random() * 120) + 'px';
+    t.style.width = (60 + Math.random() * 40) + 'px';
+    t.style.opacity = 0.25 + Math.random() * 0.2;
+    bg.appendChild(t);
+  }
+
+  const leafCanvas = document.getElementById('leaf-canvas');
+  const leafCtx = leafCanvas.getContext('2d');
+  let LW = 0, LH = 0;
+  const LEAF_DPR = Math.min(devicePixelRatio || 1, 2);
+  const LEAF_COUNT = 28;
+  const LEAF_COLORS = ['#f0c840', '#e8b020', '#d4a010', '#ffd860', '#c89008', '#ffe080'];
+  let leaves = [];
+
+  function resizeLeaves() {
+    LW = window.innerWidth; LH = window.innerHeight;
+    leafCanvas.width = LW * LEAF_DPR; leafCanvas.height = LH * LEAF_DPR;
+    leafCanvas.style.width = LW + 'px'; leafCanvas.style.height = LH + 'px';
+    leafCtx.setTransform(LEAF_DPR, 0, 0, LEAF_DPR, 0, 0);
+  }
+
+  function makeLeaves() {
+    leaves = [];
+    for (let i = 0; i < LEAF_COUNT; i++) {
+      leaves.push({
+        x: Math.random() * LW, y: Math.random() * LH, r: 4 + Math.random() * 6,
+        vx: -0.4 - Math.random() * 0.7, vy: 0.4 + Math.random() * 0.8,
+        rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.08,
+        color: LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
+        alpha: 0.35 + Math.random() * 0.35
+      });
+    }
+  }
+
+  function updateLeaves() {
+    for (const lf of leaves) {
+      lf.x += lf.vx; lf.y += lf.vy; lf.rot += lf.vr;
+      lf.vx += Math.sin(lf.y * 0.02 + lf.rot) * 0.01;
+      if (lf.vx < -1.2) lf.vx = -1.2; if (lf.vx > 0.2) lf.vx = 0.2;
+      if (lf.y > LH + 20) { lf.y = -20; lf.x = Math.random() * LW; }
+      if (lf.x < -20) { lf.x = LW + 20; lf.y = Math.random() * LH; }
+    }
+  }
+
+  function drawLeaves() {
+    leafCtx.clearRect(0, 0, LW, LH);
+    for (const lf of leaves) {
+      leafCtx.save(); leafCtx.translate(lf.x, lf.y); leafCtx.rotate(lf.rot);
+      leafCtx.globalAlpha = lf.alpha; leafCtx.fillStyle = lf.color;
+      leafCtx.beginPath(); leafCtx.ellipse(0, 0, lf.r * 1.7, lf.r * 0.7, 0, 0, Math.PI * 2); leafCtx.fill();
+      leafCtx.globalAlpha = lf.alpha * 0.6; leafCtx.strokeStyle = '#8a6a00';
+      leafCtx.lineWidth = 1; leafCtx.beginPath(); leafCtx.moveTo(-lf.r * 1.5, 0); leafCtx.lineTo(lf.r * 1.5, 0); leafCtx.stroke();
+      leafCtx.restore();
+    }
+  }
+
+  function leafLoop() { updateLeaves(); drawLeaves(); requestAnimationFrame(leafLoop); }
+  window.addEventListener('resize', () => { resizeLeaves(); makeLeaves(); });
+  resizeLeaves(); makeLeaves(); leafLoop();
+</script>
+</body>
+</html>
