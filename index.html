@@ -15,15 +15,12 @@
     background: #1a0f08; color: #ffe8c4; user-select: none;
   }
 
-  /* --- ОСЕННИЙ ФОН С ЁЛКАМИ --- */
   #forest-bg {
     position: fixed; inset: 0; z-index: 0;
     background: linear-gradient(#1a0f08 0%, #3d1f0a 35%, #6b3a12 70%, #8a4a18 100%);
-    image-rendering: pixelated;
-    overflow: hidden;
+    image-rendering: pixelated; overflow: hidden;
   }
 
-  /* Пиксельные ёлки (осенние) */
   .tree {
     position: absolute; bottom: 0; width: 80px; height: 200px;
     background: #c65a1e;
@@ -38,16 +35,12 @@
   .tree:nth-child(3n+1) { background: #a83a0e; }
   .tree:nth-child(3n+2) { background: #b86a14; }
 
-  /* --- CANVAS ЛИСТОПАД --- */
   #leaf-canvas {
-    position: fixed; inset: 0;
-    z-index: 1;
-    pointer-events: none;
-    display: block;
+    position: fixed; inset: 0; z-index: 1;
+    pointer-events: none; display: block;
     width: 100%; height: 100%;
   }
 
-  /* --- КОНТЕНТ --- */
   #app {
     position: relative; z-index: 2; height: 100%;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -158,10 +151,7 @@
 <body>
 
 <div id="forest-bg"></div>
-
-<!-- Canvas-листопад -->
 <canvas id="leaf-canvas"></canvas>
-
 <audio id="bg-audio" src="audio1.mp3" loop preload="auto"></audio>
 
 <div class="header">
@@ -201,7 +191,7 @@
       title: '🌳 ЗАДАНИЕ 1: ДРЕВЕСНЫЙ РЕБУС',
       text: `На табличке был пароль «ЛИСТВА».
 
-Разгадай ребус на картинке ниже.
+Разгадай ребус на картинках ниже.
 
 В ребусе зашифровано название дерева, произрастающего в парке Берендеевка.
 
@@ -209,7 +199,7 @@
 📌 Подойди к ведущему и покажи результат.
 
 🎁 Награда: +1 эко-монетка`,
-      image: 'image1.png'
+      image: ['image1.png', 'image1b.png']
     },
     'РЕКА': {
       title: '💧 ЗАДАНИЕ 2: СЕКРЕТНАЯ ЛОКАЦИЯ',
@@ -266,7 +256,7 @@
     }
   };
 
-  /* ================= ЛОГИКА ПАРОЛЕЙ ================= */
+  /* ================= ЭЛЕМЕНТЫ ================= */
   const input = document.getElementById('password-input');
   const checkBtn = document.getElementById('check-btn');
   const loginMsg = document.getElementById('login-msg');
@@ -277,21 +267,85 @@
   const taskImageSlot = document.getElementById('task-image-slot');
   const backBtn = document.getElementById('back-btn');
 
+  /* ================= WEB AUDIO: 8-БИТНЫЕ ЗВУКИ КНОПОК ================= */
+  let audioCtx = null;
+
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  // Базовый бип: freq — частота, dur — длительность (сек), type — форма волны, vol — громкость
+  function beep(freq, dur, type = 'square', vol = 0.12, slideTo = null, delay = 0) {
+    const ctx = ensureAudioCtx();
+    if (!ctx) return;
+    const start = ctx.currentTime + delay;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, start);
+    if (slideTo != null) {
+      o.frequency.exponentialRampToValueAtTime(Math.max(40, slideTo), start + dur);
+    }
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(vol, start + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start(start);
+    o.stop(start + dur + 0.02);
+  }
+
+  // Звук нажатия кнопки (тик)
+  function sfxClick() {
+    beep(880, 0.04, 'square', 0.06, 660);
+  }
+  // Верный пароль — восходящее «дзынь»
+  function sfxCorrect() {
+    beep(523, 0.09, 'square', 0.10);            // C5
+    beep(659, 0.09, 'square', 0.10, null, 0.08); // E5
+    beep(784, 0.14, 'square', 0.10, null, 0.16); // G5
+  }
+  // Неверный пароль — низкий «бз-з»
+  function sfxWrong() {
+    beep(180, 0.18, 'sawtooth', 0.10, 90);
+    beep(120, 0.22, 'sawtooth', 0.08, 60, 0.10);
+  }
+  // Кнопка «Назад» — глухой «тук»
+  function sfxBack() {
+    beep(440, 0.06, 'triangle', 0.08, 220);
+  }
+  // Переключение звука — щелчок
+  function sfxToggle() {
+    beep(1200, 0.03, 'square', 0.06, 900);
+  }
+
+  /* ================= ЛОГИКА ПАРОЛЕЙ ================= */
   function normalize(s) { return s.trim().toUpperCase().replace(/\s+/g, ''); }
 
   function renderImage(imageName) {
     taskImageSlot.innerHTML = '';
     if (!imageName) return;
-    const wrap = document.createElement('div');
-    wrap.className = 'task-image';
-    const img = document.createElement('img');
-    img.src = imageName;
-    img.alt = 'Иллюстрация к заданию';
-    img.onerror = () => {
-      wrap.innerHTML = `<div class="img-placeholder">[ ${imageName} ]<br>положи файл рядом с index.html</div>`;
-    };
-    wrap.appendChild(img);
-    taskImageSlot.appendChild(wrap);
+
+    const list = Array.isArray(imageName) ? imageName : [imageName];
+
+    list.forEach(name => {
+      const wrap = document.createElement('div');
+      wrap.className = 'task-image';
+
+      const img = document.createElement('img');
+      img.src = name;
+      img.alt = 'Иллюстрация к заданию';
+      img.onerror = () => {
+        wrap.innerHTML = `<div class="img-placeholder">[ ${name} ]<br>положи файл рядом с index.html</div>`;
+      };
+
+      wrap.appendChild(img);
+      taskImageSlot.appendChild(wrap);
+    });
   }
 
   function showTask(code) {
@@ -311,19 +365,25 @@
   }
 
   function checkPassword() {
+    ensureAudioCtx();
     const value = normalize(input.value);
+
     if (!value) {
       loginMsg.textContent = '⚠ ВВЕДИ ПАРОЛЬ';
       loginMsg.className = 'msg error';
+      sfxWrong();
       return;
     }
+
     if (TASKS[value]) {
       loginMsg.textContent = '✅ ПАРОЛЬ ВЕРНЫЙ! ОТКРЫВАЮ...';
       loginMsg.className = 'msg success';
+      sfxCorrect();
       setTimeout(() => showTask(value), 400);
     } else {
       loginMsg.textContent = '❌ НЕВЕРНЫЙ ПАРОЛЬ. Задание не открыто.';
       loginMsg.className = 'msg error';
+      sfxWrong();
       input.value = ''; input.focus();
       input.animate([
         { transform: 'translateX(0)' },
@@ -336,10 +396,20 @@
     }
   }
 
-  checkBtn.addEventListener('click', checkPassword);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkPassword(); });
+  checkBtn.addEventListener('click', () => {
+    sfxClick();
+    checkPassword();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sfxClick();
+      checkPassword();
+    }
+  });
 
   backBtn.addEventListener('click', () => {
+    sfxBack();
     taskScreen.classList.remove('active');
     loginScreen.classList.add('active');
     loginMsg.textContent = '';
@@ -420,7 +490,6 @@
       leafCtx.beginPath();
       leafCtx.ellipse(0, 0, lf.r * 1.7, lf.r * 0.7, 0, 0, Math.PI * 2);
       leafCtx.fill();
-      // прожилка
       leafCtx.globalAlpha = lf.alpha * 0.6;
       leafCtx.strokeStyle = '#8a6a00';
       leafCtx.lineWidth = 1;
@@ -447,29 +516,64 @@
   makeLeaves();
   leafLoop();
 
-  /* ================= ФОНОВЫЙ ЗВУК ================= */
+  /* ================= ФОНОВЫЙ ЗВУК + АВТО-ВКЛЮЧЕНИЕ ПО ПЕРВОМУ ТАПУ ================= */
   const audio = document.getElementById('bg-audio');
   const soundToggle = document.getElementById('sound-toggle');
   let soundOn = false;
-  audio.muted = true;
+  let firstGestureDone = false;
+
   audio.volume = 0.4;
+  audio.muted = false; // не глушим — пытаемся воспроизвести, браузер сам решит
+
+  audio.addEventListener('error', () => {
+    console.warn('Не удалось загрузить audio1.mp3. Проверь, что файл лежит рядом с index.html и называется audio1.mp3');
+  });
 
   function updateSoundButton() { soundToggle.textContent = soundOn ? '🔊' : '🔇'; }
 
-  soundToggle.addEventListener('click', () => {
-    soundOn = !soundOn;
-    if (soundOn) { audio.muted = false; audio.play().catch(() => {}); }
-    else { audio.muted = true; }
+  function tryStartAudio() {
+    ensureAudioCtx(); // разблокируем Web Audio
+    audio.play().then(() => {
+      soundOn = true;
+      updateSoundButton();
+    }).catch(() => {
+      // Браузер всё ещё блокирует — остаёмся выключенными, но кнопка работает
+      soundOn = false;
+      updateSoundButton();
+    });
+  }
+
+  // Первый жест пользователя — включаем звук автоматически
+  function onFirstGesture() {
+    if (firstGestureDone) return;
+    firstGestureDone = true;
+    tryStartAudio();
+    document.removeEventListener('touchstart', onFirstGesture);
+    document.removeEventListener('mousedown', onFirstGesture);
+    document.removeEventListener('keydown', onFirstGesture);
+  }
+  document.addEventListener('touchstart', onFirstGesture, { once: true, passive: true });
+  document.addEventListener('mousedown', onFirstGesture, { once: true });
+  document.addEventListener('keydown', onFirstGesture, { once: true });
+
+  soundToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sfxToggle();
+    ensureAudioCtx();
+
+    if (soundOn) {
+      audio.pause();
+      soundOn = false;
+    } else {
+      audio.play().then(() => {
+        soundOn = true;
+      }).catch(() => {
+        soundOn = false;
+        console.warn('Браузер не дал включить звук. Проверь файл audio1.mp3.');
+      });
+    }
     updateSoundButton();
   });
-
-  function tryPlay() {
-    audio.play().catch(() => {});
-    document.removeEventListener('touchstart', tryPlay);
-    document.removeEventListener('click', tryPlay);
-  }
-  document.addEventListener('touchstart', tryPlay, { once: true });
-  document.addEventListener('click', tryPlay, { once: true });
 
   updateSoundButton();
   setTimeout(() => input.focus(), 300);
