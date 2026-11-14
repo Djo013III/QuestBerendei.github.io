@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Тайны Берендеевского леса</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; overflow: hidden;
+    font-family: 'Press Start 2P', monospace;
+    background: #1a0f08; color: #ffe8c4; user-select: none;
+  }
+
+  /* --- ОСЕННИЙ ФОН С ЁЛКАМИ --- */
+  #forest-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: linear-gradient(#1a0f08 0%, #3d1f0a 35%, #6b3a12 70%, #8a4a18 100%);
+    image-rendering: pixelated;
+    overflow: hidden;
+  }
+
+  /* Пиксельные ёлки (осенние) */
+  .tree {
+    position: absolute; bottom: 0; width: 80px; height: 200px;
+    background: #c65a1e;
+    clip-path: polygon(50% 0%, 90% 35%, 75% 35%, 95% 65%, 80% 65%, 100% 100%, 0% 100%, 20% 65%, 5% 65%, 25% 35%, 10% 35%);
+    opacity: 0.4; image-rendering: pixelated;
+  }
+  .tree::after {
+    content: ''; position: absolute; bottom: 0; left: 50%;
+    transform: translateX(-50%); width: 12px; height: 40px; background: #4a2a10;
+  }
+  .tree:nth-child(3n)   { background: #d4821e; }
+  .tree:nth-child(3n+1) { background: #a83a0e; }
+  .tree:nth-child(3n+2) { background: #b86a14; }
+
+  /* --- CANVAS ЛИСТОПАД --- */
+  #leaf-canvas {
+    position: fixed; inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    display: block;
+    width: 100%; height: 100%;
+  }
+
+  /* --- КОНТЕНТ --- */
+  #app {
+    position: relative; z-index: 2; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; padding-top: 60px; padding-bottom: 60px;
+  }
+  .screen { display: none; width: 100%; max-width: 420px; text-align: center; }
+  .screen.active { display: block; }
+
+  h1 {
+    font-size: 18px; line-height: 1.6; color: #f0b830;
+    text-shadow: 3px 3px 0 #6b3a0a, 0 0 12px #c65a1e;
+    margin-bottom: 24px; letter-spacing: 1px;
+  }
+  h1 .sub {
+    display: block; font-size: 10px; color: #e8a020;
+    margin-top: 12px; text-shadow: 2px 2px 0 #3d1f0a;
+  }
+
+  .input-wrap { position: relative; margin: 20px 0; }
+  input[type="text"] {
+    width: 100%; padding: 16px 12px;
+    font-family: 'Press Start 2P', monospace; font-size: 12px;
+    text-transform: uppercase; text-align: center;
+    color: #ffe8c4; background: #2a1408;
+    border: 4px solid #c98a1a; border-radius: 0; outline: none;
+    letter-spacing: 2px;
+    box-shadow: inset 0 0 0 2px #1a0f08, 0 4px 0 #6b3a0a;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus {
+    border-color: #f0b830;
+    box-shadow: inset 0 0 0 2px #1a0f08, 0 0 12px #e8a020;
+  }
+  input::placeholder {
+    color: #8a6a3a; text-transform: none; letter-spacing: 0; font-size: 10px;
+  }
+
+  button {
+    font-family: 'Press Start 2P', monospace; font-size: 12px;
+    padding: 14px 20px; color: #1a0f08; background: #e8a020;
+    border: none; border-radius: 0; cursor: pointer;
+    box-shadow: 0 5px 0 #8a4a08, 0 0 0 4px #1a0f08;
+    transition: transform 0.08s, box-shadow 0.08s;
+    letter-spacing: 1px; width: 100%; max-width: 280px;
+  }
+  button:active { transform: translateY(4px); box-shadow: 0 1px 0 #8a4a08, 0 0 0 4px #1a0f08; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .msg { margin-top: 16px; font-size: 10px; line-height: 1.6; min-height: 40px; }
+  .msg.error   { color: #ff7a5c; text-shadow: 2px 2px 0 #8a1a08; }
+  .msg.success { color: #ffd87a; text-shadow: 2px 2px 0 #6b3a0a; }
+
+  #task-screen .task-card {
+    background: #2a1408; border: 4px solid #c98a1a; padding: 20px 16px;
+    box-shadow: inset 0 0 0 2px #1a0f08, 0 6px 0 #6b3a0a;
+    text-align: left; max-height: 70vh; overflow-y: auto;
+  }
+  #task-title {
+    font-size: 13px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a;
+    margin-bottom: 16px; text-align: center; line-height: 1.5;
+  }
+  #task-text {
+    font-size: 10px; line-height: 1.8; color: #ffe8c4;
+    font-family: 'Press Start 2P', monospace; white-space: pre-line;
+  }
+  #task-text b { color: #ffd87a; }
+
+  .task-image {
+    margin: 16px 0; padding: 8px; border: 3px dashed #c98a1a;
+    background: #1a0f08; text-align: center; min-height: 120px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .task-image img {
+    max-width: 100%; height: auto; image-rendering: pixelated; display: block;
+  }
+  .task-image .img-placeholder {
+    font-size: 9px; color: #8a6a3a; line-height: 1.6;
+  }
+
+  .back-btn {
+    margin-top: 20px; background: #d4521a;
+    box-shadow: 0 5px 0 #7a2a08, 0 0 0 4px #1a0f08;
+    color: #fff0d8; max-width: 100%;
+  }
+
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 3;
+    padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
+    background: rgba(26, 15, 8, 0.9); border-bottom: 4px solid #8a4a18;
+  }
+  .header-title { font-size: 9px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a; }
+
+  #sound-toggle {
+    font-family: 'Press Start 2P', monospace; font-size: 12px;
+    background: #8a4a18; color: #ffe8c4; border: none; padding: 8px 12px;
+    cursor: pointer; box-shadow: 0 3px 0 #4a2a10, 0 0 0 3px #1a0f08;
+    width: auto; max-width: none; letter-spacing: 0;
+  }
+  #sound-toggle:active { transform: translateY(2px); box-shadow: 0 1px 0 #4a2a10, 0 0 0 3px #1a0f08; }
+
+  @media (max-height: 600px) {
+    h1 { font-size: 14px; margin-bottom: 16px; }
+    input[type="text"] { padding: 12px 10px; }
+    button { padding: 12px 16px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="forest-bg"></div>
+
+<!-- Canvas-листопад -->
+<canvas id="leaf-canvas"></canvas>
+
+<audio id="bg-audio" src="audio1.mp3" loop preload="auto"></audio>
+
+<div class="header">
+  <div class="header-title">🍂 ТАЙНЫ БЕРЕНДЕЕВСКОГО ЛЕСА</div>
+  <button id="sound-toggle" title="Включить/выключить звук">🔇</button>
+</div>
+
+<div id="app">
+
+  <div id="login-screen" class="screen active">
+    <h1>
+      🍁 ДОБРО ПОЖАЛОВАТЬ 🍁
+      <span class="sub">Введи пароль из осеннего леса</span>
+    </h1>
+    <div class="input-wrap">
+      <input type="text" id="password-input" placeholder="пароль..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="20">
+    </div>
+    <button id="check-btn">ОТКРЫТЬ ЗАДАНИЕ</button>
+    <div id="login-msg" class="msg"></div>
+  </div>
+
+  <div id="task-screen" class="screen">
+    <div class="task-card">
+      <div id="task-title"></div>
+      <div id="task-text"></div>
+      <div id="task-image-slot"></div>
+    </div>
+    <button id="back-btn" class="back-btn">← НАЗАД</button>
+  </div>
+
+</div>
+
+<script>
+  /* ================= ПАРОЛИ И ЗАДАНИЯ ================= */
+  const TASKS = {
+    'ЛИСТВА': {
+      title: '🌳 ЗАДАНИЕ 1: ДРЕВЕСНЫЙ РЕБУС',
+      text: `На табличке был пароль «ЛИСТВА».
+
+Разгадай ребус на картинке ниже.
+
+В ребусе зашифровано название дерева, произрастающего в парке Берендеевка.
+
+📌 Запиши ответ в Дневник.
+📌 Подойди к ведущему и покажи результат.
+
+🎁 Награда: +1 эко-монетка`,
+      image: 'image1.png'
+    },
+    'РЕКА': {
+      title: '💧 ЗАДАНИЕ 2: СЕКРЕТНАЯ ЛОКАЦИЯ',
+      text: `На табличке был пароль «РЕКА».
+
+Расшифруй числовой шифр:
+
+3-10-5- -15-1- -17-1-18-12- -19- -14-16-19-20-1
+
+Каждое число — буква алфавита (1=А, 2=Б, ...).
+
+📌 Найди это место в парке.
+📌 Сфотографируйся там всей командой.
+
+🎁 Награда: +1 эко-монетка`,
+      image: null
+    },
+    'ДРЕВО': {
+      title: '📜 ЗАДАНИЕ 3: МУДРОСТЬ ДЕРЕВА',
+      text: `На табличке был пароль «ДРЕВО».
+
+Расшифруй пословицу о бережном отношении к природе (картинка ниже).
+
+📌 Запиши пословицу.
+📌 Объясни её смысл (2–3 предложения).
+
+🎁 Награда: +1 эко-монетка`,
+      image: 'image2.png'
+    },
+    'ЧИСТОТА': {
+      title: '🧹 ЗАДАНИЕ 4: ПОМОЩНИК ЛЕСА',
+      text: `На табличке был пароль «ЧИСТОТА».
+
+Найди в парке экологическую проблему (мусор, вытоптанное место).
+
+📌 Устрани её своими силами (собери мусор, присыпь корни землёй).
+📌 Сделай фото «до» и «после».
+
+🎁 Награда: +1 эко-монетка`,
+      image: null
+    },
+    'ГАРМОНИЯ': {
+      title: '📸 ЗАДАНИЕ 5: ПАМЯТЬ ЛЕСА',
+      text: `На табличке был пароль «ГАРМОНИЯ».
+
+Сделай селфи вашей команды на фоне осеннего парка Берендеевка.
+
+📌 Выберите самое красивое место.
+📌 Сфотографируйтесь всей командой.
+📌 Покажи фото ведущему.
+
+🎁 Награда: +1 эко-монетка`,
+      image: null
+    }
+  };
+
+  /* ================= ЛОГИКА ПАРОЛЕЙ ================= */
+  const input = document.getElementById('password-input');
+  const checkBtn = document.getElementById('check-btn');
+  const loginMsg = document.getElementById('login-msg');
+  const loginScreen = document.getElementById('login-screen');
+  const taskScreen = document.getElementById('task-screen');
+  const taskTitle = document.getElementById('task-title');
+  const taskText = document.getElementById('task-text');
+  const taskImageSlot = document.getElementById('task-image-slot');
+  const backBtn = document.getElementById('back-btn');
+
+  function normalize(s) { return s.trim().toUpperCase().replace(/\s+/g, ''); }
+
+  function renderImage(imageName) {
+    taskImageSlot.innerHTML = '';
+    if (!imageName) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'task-image';
+    const img = document.createElement('img');
+    img.src = imageName;
+    img.alt = 'Иллюстрация к заданию';
+    img.onerror = () => {
+      wrap.innerHTML = `<div class="img-placeholder">[ ${imageName} ]<br>положи файл рядом с index.html</div>`;
+    };
+    wrap.appendChild(img);
+    taskImageSlot.appendChild(wrap);
+  }
+
+  function showTask(code) {
+    const task = TASKS[code];
+    if (!task) {
+      loginMsg.textContent = '⚠ ПАРОЛЬ НЕ НАЙДЕН. Попробуй другой.';
+      loginMsg.className = 'msg error';
+      input.value = ''; input.focus();
+      return;
+    }
+    taskTitle.textContent = task.title;
+    taskText.textContent = task.text;
+    renderImage(task.image);
+    loginScreen.classList.remove('active');
+    taskScreen.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function checkPassword() {
+    const value = normalize(input.value);
+    if (!value) {
+      loginMsg.textContent = '⚠ ВВЕДИ ПАРОЛЬ';
+      loginMsg.className = 'msg error';
+      return;
+    }
+    if (TASKS[value]) {
+      loginMsg.textContent = '✅ ПАРОЛЬ ВЕРНЫЙ! ОТКРЫВАЮ...';
+      loginMsg.className = 'msg success';
+      setTimeout(() => showTask(value), 400);
+    } else {
+      loginMsg.textContent = '❌ НЕВЕРНЫЙ ПАРОЛЬ. Задание не открыто.';
+      loginMsg.className = 'msg error';
+      input.value = ''; input.focus();
+      input.animate([
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-6px)' },
+        { transform: 'translateX(6px)' },
+        { transform: 'translateX(-4px)' },
+        { transform: 'translateX(4px)' },
+        { transform: 'translateX(0)' }
+      ], { duration: 300 });
+    }
+  }
+
+  checkBtn.addEventListener('click', checkPassword);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkPassword(); });
+
+  backBtn.addEventListener('click', () => {
+    taskScreen.classList.remove('active');
+    loginScreen.classList.add('active');
+    loginMsg.textContent = '';
+    input.value = '';
+    setTimeout(() => input.focus(), 100);
+  });
+
+  /* ================= ЁЛКИ НА ФОНЕ ================= */
+  const bg = document.getElementById('forest-bg');
+  for (let i = 0; i < 8; i++) {
+    const t = document.createElement('div');
+    t.className = 'tree';
+    t.style.left = (i * 13 + Math.random() * 5) + '%';
+    t.style.height = (140 + Math.random() * 120) + 'px';
+    t.style.width = (60 + Math.random() * 40) + 'px';
+    t.style.opacity = 0.25 + Math.random() * 0.2;
+    bg.appendChild(t);
+  }
+
+  /* ================= CANVAS-ЛИСТОПАД (жёлтый) ================= */
+  const leafCanvas = document.getElementById('leaf-canvas');
+  const leafCtx = leafCanvas.getContext('2d');
+  let LW = 0, LH = 0;
+  const LEAF_DPR = Math.min(devicePixelRatio || 1, 2);
+
+  const LEAF_COUNT = 28;
+  const LEAF_COLORS = ['#f0c840', '#e8b020', '#d4a010', '#ffd860', '#c89008', '#ffe080'];
+  let leaves = [];
+
+  function resizeLeaves() {
+    LW = window.innerWidth;
+    LH = window.innerHeight;
+    leafCanvas.width = LW * LEAF_DPR;
+    leafCanvas.height = LH * LEAF_DPR;
+    leafCanvas.style.width = LW + 'px';
+    leafCanvas.style.height = LH + 'px';
+    leafCtx.setTransform(LEAF_DPR, 0, 0, LEAF_DPR, 0, 0);
+  }
+
+  function makeLeaves() {
+    leaves = [];
+    for (let i = 0; i < LEAF_COUNT; i++) {
+      leaves.push({
+        x: Math.random() * LW,
+        y: Math.random() * LH,
+        r: 4 + Math.random() * 6,
+        vx: -0.4 - Math.random() * 0.7,
+        vy: 0.4 + Math.random() * 0.8,
+        rot: Math.random() * Math.PI * 2,
+        vr: (Math.random() - 0.5) * 0.08,
+        color: LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
+        alpha: 0.35 + Math.random() * 0.35
+      });
+    }
+  }
+
+  function updateLeaves() {
+    for (const lf of leaves) {
+      lf.x += lf.vx;
+      lf.y += lf.vy;
+      lf.rot += lf.vr;
+      lf.vx += Math.sin(lf.y * 0.02 + lf.rot) * 0.01;
+      if (lf.vx < -1.2) lf.vx = -1.2;
+      if (lf.vx > 0.2) lf.vx = 0.2;
+      if (lf.y > LH + 20) { lf.y = -20; lf.x = Math.random() * LW; }
+      if (lf.x < -20) { lf.x = LW + 20; lf.y = Math.random() * LH; }
+    }
+  }
+
+  function drawLeaves() {
+    leafCtx.clearRect(0, 0, LW, LH);
+    for (const lf of leaves) {
+      leafCtx.save();
+      leafCtx.translate(lf.x, lf.y);
+      leafCtx.rotate(lf.rot);
+      leafCtx.globalAlpha = lf.alpha;
+      leafCtx.fillStyle = lf.color;
+      leafCtx.beginPath();
+      leafCtx.ellipse(0, 0, lf.r * 1.7, lf.r * 0.7, 0, 0, Math.PI * 2);
+      leafCtx.fill();
+      // прожилка
+      leafCtx.globalAlpha = lf.alpha * 0.6;
+      leafCtx.strokeStyle = '#8a6a00';
+      leafCtx.lineWidth = 1;
+      leafCtx.beginPath();
+      leafCtx.moveTo(-lf.r * 1.5, 0);
+      leafCtx.lineTo(lf.r * 1.5, 0);
+      leafCtx.stroke();
+      leafCtx.restore();
+    }
+  }
+
+  function leafLoop() {
+    updateLeaves();
+    drawLeaves();
+    requestAnimationFrame(leafLoop);
+  }
+
+  window.addEventListener('resize', () => {
+    resizeLeaves();
+    makeLeaves();
+  });
+
+  resizeLeaves();
+  makeLeaves();
+  leafLoop();
+
+  /* ================= ФОНОВЫЙ ЗВУК ================= */
+  const audio = document.getElementById('bg-audio');
+  const soundToggle = document.getElementById('sound-toggle');
+  let soundOn = false;
+  audio.muted = true;
+  audio.volume = 0.4;
+
+  function updateSoundButton() { soundToggle.textContent = soundOn ? '🔊' : '🔇'; }
+
+  soundToggle.addEventListener('click', () => {
+    soundOn = !soundOn;
+    if (soundOn) { audio.muted = false; audio.play().catch(() => {}); }
+    else { audio.muted = true; }
+    updateSoundButton();
+  });
+
+  function tryPlay() {
+    audio.play().catch(() => {});
+    document.removeEventListener('touchstart', tryPlay);
+    document.removeEventListener('click', tryPlay);
+  }
+  document.addEventListener('touchstart', tryPlay, { once: true });
+  document.addEventListener('click', tryPlay, { once: true });
+
+  updateSoundButton();
+  setTimeout(() => input.focus(), 300);
+</script>
+</body>
+</html>
