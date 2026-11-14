@@ -516,66 +516,58 @@
   makeLeaves();
   leafLoop();
 
-  /* ================= ФОНОВЫЙ ЗВУК + АВТО-ВКЛЮЧЕНИЕ ПО ПЕРВОМУ ТАПУ ================= */
+  /* ================= ФОНОВЫЙ ЗВУК (ПО ПЕРВОМУ КЛИКУ) ================= */
   const audio = document.getElementById('bg-audio');
   const soundToggle = document.getElementById('sound-toggle');
-  let soundOn = false;
-  let firstGestureDone = false;
+  let isAudioStarted = false;
 
   audio.volume = 0.4;
-  audio.muted = false; // не глушим — пытаемся воспроизвести, браузер сам решит
 
-  audio.addEventListener('error', () => {
-    console.warn('Не удалось загрузить audio1.mp3. Проверь, что файл лежит рядом с index.html и называется audio1.mp3');
-  });
+  // Функция обновления иконки
+  function updateSoundIcon() {
+    if (!audio.paused) {
+      soundToggle.textContent = '🔊';
+      soundToggle.style.background = '#2e7d32'; // Зеленый
+    } else {
+      soundToggle.textContent = '🔇';
+      soundToggle.style.background = '#8a4a18'; // Коричневый
+    }
+  }
 
-  function updateSoundButton() { soundToggle.textContent = soundOn ? '🔊' : '🔇'; }
-
-  function tryStartAudio() {
-    ensureAudioCtx(); // разблокируем Web Audio
+  // Запуск при первом касании/клике где угодно
+  function startAudioOnFirstTap() {
+    if (isAudioStarted) return;
+    isAudioStarted = true;
+    
     audio.play().then(() => {
-      soundOn = true;
-      updateSoundButton();
-    }).catch(() => {
-      // Браузер всё ещё блокирует — остаёмся выключенными, но кнопка работает
-      soundOn = false;
-      updateSoundButton();
+      updateSoundIcon();
+    }).catch((error) => {
+      console.warn('Браузер заблокировал звук:', error);
+      updateSoundIcon();
     });
   }
 
-  // Первый жест пользователя — включаем звук автоматически
-  function onFirstGesture() {
-    if (firstGestureDone) return;
-    firstGestureDone = true;
-    tryStartAudio();
-    document.removeEventListener('touchstart', onFirstGesture);
-    document.removeEventListener('mousedown', onFirstGesture);
-    document.removeEventListener('keydown', onFirstGesture);
-  }
-  document.addEventListener('touchstart', onFirstGesture, { once: true, passive: true });
-  document.addEventListener('mousedown', onFirstGesture, { once: true });
-  document.addEventListener('keydown', onFirstGesture, { once: true });
+  // Слушаем первый тап на экран (и телефон, и компьютер)
+  document.addEventListener('touchstart', startAudioOnFirstTap, { once: true, passive: true });
+  document.addEventListener('mousedown', startAudioOnFirstTap, { once: true });
+  document.addEventListener('keydown', startAudioOnFirstTap, { once: true }); // если начнут вводить пароль с клавиатуры
 
+  // Кнопка в шапке (включить/выключить вручную)
   soundToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    sfxToggle();
-    ensureAudioCtx();
-
-    if (soundOn) {
-      audio.pause();
-      soundOn = false;
+    e.stopPropagation(); // Чтобы не срабатывал тап по экрану еще раз
+    if (audio.paused) {
+      audio.play().then(updateSoundIcon).catch(console.warn);
     } else {
-      audio.play().then(() => {
-        soundOn = true;
-      }).catch(() => {
-        soundOn = false;
-        console.warn('Браузер не дал включить звук. Проверь файл audio1.mp3.');
-      });
+      audio.pause();
+      updateSoundIcon();
     }
-    updateSoundButton();
   });
 
-  updateSoundButton();
+  // Синхронизация иконки
+  audio.addEventListener('play', updateSoundIcon);
+  audio.addEventListener('pause', updateSoundIcon);
+
+  updateSoundIcon();
   setTimeout(() => input.focus(), 300);
 </script>
 </body>
