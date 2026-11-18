@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Секретное слово</title>
+<title>Пароль: ГАРМОНИЯ</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -38,18 +38,20 @@
     box-shadow: inset 0 0 0 2px #1a0f08, 0 6px 0 #6b3a0a;
     width: 100%; max-width: 400px;
   }
-  .card h1 { font-size: 12px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a; margin-bottom: 20px; line-height: 1.6; }
-  .secret-word {
-    font-size: 22px; color: #ffe8c4; text-shadow: 3px 3px 0 #8a4a08;
-    margin: 20px 0; padding: 20px 10px; background: #1a0f08; border: 3px dashed #c98a1a;
-    letter-spacing: 3px; word-break: break-all;
-    animation: glow 2s infinite alternate;
+  .card h1 { font-size: 14px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a; margin-bottom: 20px; line-height: 1.5; }
+  .password {
+    font-size: 24px; color: #ffe8c4; text-shadow: 3px 3px 0 #8a4a08;
+    margin: 20px 0; padding: 15px; background: #1a0f08; border: 2px dashed #c98a1a;
+    letter-spacing: 4px; word-break: break-all;
   }
-  @keyframes glow {
-    from { box-shadow: 0 0 5px #c98a1a; }
-    to { box-shadow: 0 0 20px #f0b830; border-color: #f0b830; }
+  .hint { font-size: 10px; line-height: 1.6; color: #e8a020; margin-top: 20px; }
+  .back-btn {
+    margin-top: 30px; font-family: 'Press Start 2P', monospace; font-size: 12px;
+    padding: 14px 20px; color: #1a0f08; background: #e8a020; border: none; cursor: pointer;
+    box-shadow: 0 5px 0 #8a4a08, 0 0 0 4px #1a0f08; transition: transform 0.08s;
+    text-decoration: none; display: inline-block;
   }
-  .hint { font-size: 9px; line-height: 1.8; color: #e8a020; margin-top: 20px; }
+  .back-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #8a4a08, 0 0 0 4px #1a0f08; }
 
   .header {
     position: fixed; top: 0; left: 0; right: 0; z-index: 3; padding: 10px 16px;
@@ -63,24 +65,26 @@
 <div id="forest-bg"></div>
 <canvas id="leaf-canvas"></canvas>
 
-<div class="header">🍂 СЕКРЕТЫ БЕРЕНДЕЕВСКОГО ЛЕСА</div>
+<div class="header">🍂 ТАЙНЫ БЕРЕНДЕЕВСКОГО ЛЕСА</div>
 
 <div id="app">
   <div class="card">
-    <h1>✨ СЕКРЕТНОЕ СЛОВО ✨</h1>
+    <h1>📜 ВАШ ПАРОЛЬ ОТ ЗАДАНИЯ</h1>
     
-    <!-- ВОТ ТУТ МЕНЯЕМ СЛОВО -->
-    <div class="secret-word">СОЛОВЕЙ</div>
+    <!-- ВОТ ТУТ МЕНЯЕМ ПАРОЛЬ -->
+    <div class="password">ДРЕВО</div>
     
+    <!-- ВОТ ТУТ МЕНЯЕМ ПОДСКАЗКУ -->
     <div class="hint">
-      Запомни или запиши это слово.<br><br>
-   
+      Введи это слово на главной странице квеста, чтобы открыть задание «Мудрость дерева».
     </div>
+    
+    <a href="index.html" class="back-btn">← К ВВОДУ ПАРОЛЯ</a>
   </div>
 </div>
 
 <script>
-  // Отрисовка ёлок и листьев (копируем с главной)
+  // Скрипт для отрисовки ёлок и листьев (копируем его с главной страницы)
   const bg = document.getElementById('forest-bg');
   for (let i = 0; i < 8; i++) {
     const t = document.createElement('div');
