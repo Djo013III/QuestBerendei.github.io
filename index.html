@@ -133,14 +133,6 @@
   }
   .header-title { font-size: 9px; color: #f0b830; text-shadow: 2px 2px 0 #6b3a0a; }
 
-  #sound-toggle {
-    font-family: 'Press Start 2P', monospace; font-size: 12px;
-    background: #8a4a18; color: #ffe8c4; border: none; padding: 8px 12px;
-    cursor: pointer; box-shadow: 0 3px 0 #4a2a10, 0 0 0 3px #1a0f08;
-    width: auto; max-width: none; letter-spacing: 0;
-  }
-  #sound-toggle:active { transform: translateY(2px); box-shadow: 0 1px 0 #4a2a10, 0 0 0 3px #1a0f08; }
-
   @media (max-height: 600px) {
     h1 { font-size: 14px; margin-bottom: 16px; }
     input[type="text"] { padding: 12px 10px; }
@@ -160,10 +152,11 @@
 
 <div id="app">
 
+  <!-- ЭКРАН ВВОДА ПАРОЛЯ -->
   <div id="login-screen" class="screen active">
     <h1>
-       ДОБРО ПОЖАЛОВАТЬ 
-      <span class="sub">Введи пароль из осеннего леса</span>
+      ВВЕДИ ПАРОЛЬ
+      <span class="sub">Найди QR-код в лесу и узнай пароль</span>
     </h1>
     <div class="input-wrap">
       <input type="text" id="password-input" placeholder="пароль..." autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="20">
@@ -172,6 +165,7 @@
     <div id="login-msg" class="msg"></div>
   </div>
 
+  <!-- ЭКРАН ЗАДАНИЯ -->
   <div id="task-screen" class="screen">
     <div class="task-card">
       <div id="task-title"></div>
@@ -186,72 +180,66 @@
 <script>
   /* ================= ПАРОЛИ И ЗАДАНИЯ ================= */
   const TASKS = {
-    'ЛИСТВА': {
-      title: '🌳 ЗАДАНИЕ 1: ДРЕВЕСНЫЙ РЕБУС',
-      text: `На табличке был пароль «ЛИСТВА».
-
-Разгадай ребус на картинках ниже.
-
-В ребусе зашифровано название дерева, произрастающего в парке Берендеевка.
-
-📌 Запиши ответ в Дневник.
-📌 Подойди к ведущему и покажи результат.
+    'КОРА': {
+      title: '🌳 ЗАДАНИЕ 1: ТАЙНЫ ДРЕВЕСНОЙ КОРЫ',
+      text: `Найти и сфотографировать 4-5 разных видов деревьев по коре и листу. Заполнить в Дневнике таблицу, сделать фото и зарисовать схематично вид коры и листа дерева.
 
 🎁 Награда: +1 эко-монетка`,
-      image: ['image1.png', 'image1b.png']
+      image: null
     },
-    'РЕКА': {
-      title: '💧 ЗАДАНИЕ 2: СЕКРЕТНАЯ ЛОКАЦИЯ',
-      text: `На табличке был пароль «РЕКА».
+    'ЛИСТОПАД': {
+      title: '🌿 ЗАДАНИЕ 2: ЗЕЛЁНАЯ КОЛЛЕКЦИЯ БЕРЕНДЕЕВКИ',
+      text: `Сфотографировать и зарисовать 4-5 разных растений (не срывать!) и заполнить по ним таблицу. Указать название, тип (трава/кустарник/дерево), место произрастания, роль в экосистеме (пища, лекарство, убежище, почвоулучшение).
 
-Расшифруй числовой шифр:
+🎁 Награда: +1 эко-монетка`,
+      image: null
+    },
+    'СОЛОВЕЙ': {
+      title: '🎵 ЗАДАНИЕ 3: ЗВУКИ И ЗНАКИ ЛЕСА',
+      text: `Задокументировать 3-4 любых «скрытых знака» из списка (птичий голос, погрызы на шишке, муравьиная тропа, перо, пустые домики, следы человека, объеденный лист, птица в полёте). Сделать фото/аудио, описать связь с экосистемой.
 
-3-10-5- -15-1- -17-1-18-12- -19- -14-16-19-20-1
+📌 Список знаков есть в Дневнике хранителя.
 
-Каждое число — буква алфавита (1=А, 2=Б, ...).
+🎁 Награда: +1 эко-монетка`,
+      image: null
+    },
+    'ЭКОСИСТЕМА': {
+      title: '⚖️ ЗАДАНИЕ 4: ЭКОЛОГИЧЕСКАЯ ГОЛОВОЛОМКА',
+      text: `Письменно описать последствия экологической ситуации (5–7 предложений).
 
-📌 Найди это место в парке.
-📌 Сфотографируйся там всей командой.
+Ситуация: «В парке начали массово уничтожать божьих коровок, считая их вредными. Что произойдёт с экосистемой через год? Опишите цепочку последствий для растений, насекомых, птиц и почвы».
+
+🎁 Награда: +1 эко-монетка`,
+      image: null
+    },
+    'ЧИСТОТА': {
+      title: '🧹 ЗАДАНИЕ 5: СЛЕДЫ ЧЕЛОВЕКА',
+      text: `Найти и задокументировать 3 примера негативного антропогенного воздействия человека на природу (мусор, вытаптывание, повреждение деревьев и т.д). Для каждого: фото, зарисовка, описание вреда, 1–2 реальных решения данной проблемы. По возможности устранить «следы человека» своими силами, например, собрать мусор.
 
 🎁 Награда: +1 эко-монетка`,
       image: null
     },
     'ДРЕВО': {
-      title: '📜 ЗАДАНИЕ 3: МУДРОСТЬ ДЕРЕВА',
-      text: `На табличке был пароль «ДРЕВО».
+      title: '🌳 ДОП. ЗАДАНИЕ 1: ДРЕВЕСНЫЙ РЕБУС',
+      text: `Разгадай ребус на картинке ниже.
 
-Расшифруй пословицу о бережном отношении к природе (картинка ниже).
+В ребусе зашифровано название растения, которое произрастает в секретной локации (в самой локации будет размещено фото растения или модель).
 
-📌 Запиши пословицу.
-📌 Объясни её смысл (2–3 предложения).
-
-🎁 Награда: +1 эко-монетка`,
-      image: 'image2.png'
-    },
-    'ЧИСТОТА': {
-      title: '🧹 ЗАДАНИЕ 4: ПОМОЩНИК ЛЕСА',
-      text: `На табличке был пароль «ЧИСТОТА».
-
-Найди в парке экологическую проблему (мусор, вытоптанное место).
-
-📌 Устрани её своими силами (собери мусор, присыпь корни землёй).
-📌 Сделай фото «до» и «после».
+📌 Запиши ответ в Дневник.
+📌 Найди секретную локацию в парке.
 
 🎁 Награда: +1 эко-монетка`,
-      image: null
+      image: ['image_drevo1.png', 'image_drevo2.png'] // Сюда вставишь картинки ребуса
     },
     'ГАРМОНИЯ': {
-      title: '📸 ЗАДАНИЕ 5: ПАМЯТЬ ЛЕСА',
-      text: `На табличке был пароль «ГАРМОНИЯ».
+      title: '📍 ДОП. ЗАДАНИЕ 2: СЕКРЕТНАЯ ЛОКАЦИЯ',
+      text: `Расшифруй криптограмму (числовой шифр) на картинке ниже.
 
-Сделай селфи вашей команды на фоне осеннего парка Берендеевка.
-
-📌 Выберите самое красивое место.
-📌 Сфотографируйтесь всей командой.
-📌 Покажи фото ведущему.
+📌 Найди эту локацию в парке.
+📌 Сделай селфи вашей команды в этом месте.
 
 🎁 Награда: +1 эко-монетка`,
-      image: null
+      image: ['image_garmoniya1.png', 'image_garmoniya2.png'] // Сюда вставишь картинки шифра
     }
   };
 
@@ -266,61 +254,23 @@
   const taskImageSlot = document.getElementById('task-image-slot');
   const backBtn = document.getElementById('back-btn');
 
-  /* ================= WEB AUDIO: 8-БИТНЫЕ ЗВУКИ КНОПОК ================= */
-  let audioCtx = null;
+  /* ================= ФОНОВЫЙ ЗВУК (ПО ПЕРВОМУ ТАПУ) ================= */
+  const audio = document.getElementById('bg-audio');
+  let isAudioStarted = false;
 
-  function ensureAudioCtx() {
-    if (!audioCtx) {
-      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
-    }
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    return audioCtx;
-  }
+  audio.volume = 0.4;
 
-  // Базовый бип: freq — частота, dur — длительность (сек), type — форма волны, vol — громкость
-  function beep(freq, dur, type = 'square', vol = 0.12, slideTo = null, delay = 0) {
-    const ctx = ensureAudioCtx();
-    if (!ctx) return;
-    const start = ctx.currentTime + delay;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, start);
-    if (slideTo != null) {
-      o.frequency.exponentialRampToValueAtTime(Math.max(40, slideTo), start + dur);
-    }
-    g.gain.setValueAtTime(0.0001, start);
-    g.gain.exponentialRampToValueAtTime(vol, start + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-    o.connect(g);
-    g.connect(ctx.destination);
-    o.start(start);
-    o.stop(start + dur + 0.02);
+  function startAudioOnFirstTap() {
+    if (isAudioStarted) return;
+    isAudioStarted = true;
+    audio.play().catch((error) => {
+      console.warn('Браузер заблокировал звук:', error);
+    });
   }
 
-  // Звук нажатия кнопки (тик)
-  function sfxClick() {
-    beep(880, 0.04, 'square', 0.06, 660);
-  }
-  // Верный пароль — восходящее «дзынь»
-  function sfxCorrect() {
-    beep(523, 0.09, 'square', 0.10);            // C5
-    beep(659, 0.09, 'square', 0.10, null, 0.08); // E5
-    beep(784, 0.14, 'square', 0.10, null, 0.16); // G5
-  }
-  // Неверный пароль — низкий «бз-з»
-  function sfxWrong() {
-    beep(180, 0.18, 'sawtooth', 0.10, 90);
-    beep(120, 0.22, 'sawtooth', 0.08, 60, 0.10);
-  }
-  // Кнопка «Назад» — глухой «тук»
-  function sfxBack() {
-    beep(440, 0.06, 'triangle', 0.08, 220);
-  }
-  // Переключение звука — щелчок
-  function sfxToggle() {
-    beep(1200, 0.03, 'square', 0.06, 900);
-  }
+  document.addEventListener('touchstart', startAudioOnFirstTap, { once: true, passive: true });
+  document.addEventListener('mousedown', startAudioOnFirstTap, { once: true });
+  document.addEventListener('keydown', startAudioOnFirstTap, { once: true });
 
   /* ================= ЛОГИКА ПАРОЛЕЙ ================= */
   function normalize(s) { return s.trim().toUpperCase().replace(/\s+/g, ''); }
@@ -328,20 +278,16 @@
   function renderImage(imageName) {
     taskImageSlot.innerHTML = '';
     if (!imageName) return;
-
     const list = Array.isArray(imageName) ? imageName : [imageName];
-
     list.forEach(name => {
       const wrap = document.createElement('div');
       wrap.className = 'task-image';
-
       const img = document.createElement('img');
       img.src = name;
       img.alt = 'Иллюстрация к заданию';
       img.onerror = () => {
         wrap.innerHTML = `<div class="img-placeholder">[ ${name} ]<br>положи файл рядом с index.html</div>`;
       };
-
       wrap.appendChild(img);
       taskImageSlot.appendChild(wrap);
     });
@@ -349,12 +295,7 @@
 
   function showTask(code) {
     const task = TASKS[code];
-    if (!task) {
-      loginMsg.textContent = '⚠ ПАРОЛЬ НЕ НАЙДЕН. Попробуй другой.';
-      loginMsg.className = 'msg error';
-      input.value = ''; input.focus();
-      return;
-    }
+    if (!task) return;
     taskTitle.textContent = task.title;
     taskText.textContent = task.text;
     renderImage(task.image);
@@ -364,51 +305,34 @@
   }
 
   function checkPassword() {
-    ensureAudioCtx();
     const value = normalize(input.value);
-
     if (!value) {
       loginMsg.textContent = '⚠ ВВЕДИ ПАРОЛЬ';
       loginMsg.className = 'msg error';
-      sfxWrong();
       return;
     }
 
     if (TASKS[value]) {
       loginMsg.textContent = '✅ ПАРОЛЬ ВЕРНЫЙ! ОТКРЫВАЮ...';
       loginMsg.className = 'msg success';
-      sfxCorrect();
       setTimeout(() => showTask(value), 400);
     } else {
       loginMsg.textContent = '❌ НЕВЕРНЫЙ ПАРОЛЬ. Задание не открыто.';
       loginMsg.className = 'msg error';
-      sfxWrong();
       input.value = ''; input.focus();
       input.animate([
-        { transform: 'translateX(0)' },
-        { transform: 'translateX(-6px)' },
-        { transform: 'translateX(6px)' },
-        { transform: 'translateX(-4px)' },
-        { transform: 'translateX(4px)' },
-        { transform: 'translateX(0)' }
+        { transform: 'translateX(0)' }, { transform: 'translateX(-6px)' }, { transform: 'translateX(6px)' },
+        { transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'translateX(0)' }
       ], { duration: 300 });
     }
   }
 
-  checkBtn.addEventListener('click', () => {
-    sfxClick();
-    checkPassword();
-  });
-
+  checkBtn.addEventListener('click', checkPassword);
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      sfxClick();
-      checkPassword();
-    }
+    if (e.key === 'Enter') checkPassword();
   });
 
   backBtn.addEventListener('click', () => {
-    sfxBack();
     taskScreen.classList.remove('active');
     loginScreen.classList.add('active');
     loginMsg.textContent = '';
@@ -416,7 +340,7 @@
     setTimeout(() => input.focus(), 100);
   });
 
-  /* ================= ЁЛКИ НА ФОНЕ ================= */
+  /* ================= ДЕКОР ================= */
   const bg = document.getElementById('forest-bg');
   for (let i = 0; i < 8; i++) {
     const t = document.createElement('div');
@@ -428,23 +352,18 @@
     bg.appendChild(t);
   }
 
-  /* ================= CANVAS-ЛИСТОПАД (жёлтый) ================= */
   const leafCanvas = document.getElementById('leaf-canvas');
   const leafCtx = leafCanvas.getContext('2d');
   let LW = 0, LH = 0;
   const LEAF_DPR = Math.min(devicePixelRatio || 1, 2);
-
   const LEAF_COUNT = 28;
   const LEAF_COLORS = ['#f0c840', '#e8b020', '#d4a010', '#ffd860', '#c89008', '#ffe080'];
   let leaves = [];
 
   function resizeLeaves() {
-    LW = window.innerWidth;
-    LH = window.innerHeight;
-    leafCanvas.width = LW * LEAF_DPR;
-    leafCanvas.height = LH * LEAF_DPR;
-    leafCanvas.style.width = LW + 'px';
-    leafCanvas.style.height = LH + 'px';
+    LW = window.innerWidth; LH = window.innerHeight;
+    leafCanvas.width = LW * LEAF_DPR; leafCanvas.height = LH * LEAF_DPR;
+    leafCanvas.style.width = LW + 'px'; leafCanvas.style.height = LH + 'px';
     leafCtx.setTransform(LEAF_DPR, 0, 0, LEAF_DPR, 0, 0);
   }
 
@@ -452,13 +371,9 @@
     leaves = [];
     for (let i = 0; i < LEAF_COUNT; i++) {
       leaves.push({
-        x: Math.random() * LW,
-        y: Math.random() * LH,
-        r: 4 + Math.random() * 6,
-        vx: -0.4 - Math.random() * 0.7,
-        vy: 0.4 + Math.random() * 0.8,
-        rot: Math.random() * Math.PI * 2,
-        vr: (Math.random() - 0.5) * 0.08,
+        x: Math.random() * LW, y: Math.random() * LH, r: 4 + Math.random() * 6,
+        vx: -0.4 - Math.random() * 0.7, vy: 0.4 + Math.random() * 0.8,
+        rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.08,
         color: LEAF_COLORS[Math.floor(Math.random() * LEAF_COLORS.length)],
         alpha: 0.35 + Math.random() * 0.35
       });
@@ -467,12 +382,9 @@
 
   function updateLeaves() {
     for (const lf of leaves) {
-      lf.x += lf.vx;
-      lf.y += lf.vy;
-      lf.rot += lf.vr;
+      lf.x += lf.vx; lf.y += lf.vy; lf.rot += lf.vr;
       lf.vx += Math.sin(lf.y * 0.02 + lf.rot) * 0.01;
-      if (lf.vx < -1.2) lf.vx = -1.2;
-      if (lf.vx > 0.2) lf.vx = 0.2;
+      if (lf.vx < -1.2) lf.vx = -1.2; if (lf.vx > 0.2) lf.vx = 0.2;
       if (lf.y > LH + 20) { lf.y = -20; lf.x = Math.random() * LW; }
       if (lf.x < -20) { lf.x = LW + 20; lf.y = Math.random() * LH; }
     }
@@ -481,92 +393,19 @@
   function drawLeaves() {
     leafCtx.clearRect(0, 0, LW, LH);
     for (const lf of leaves) {
-      leafCtx.save();
-      leafCtx.translate(lf.x, lf.y);
-      leafCtx.rotate(lf.rot);
-      leafCtx.globalAlpha = lf.alpha;
-      leafCtx.fillStyle = lf.color;
-      leafCtx.beginPath();
-      leafCtx.ellipse(0, 0, lf.r * 1.7, lf.r * 0.7, 0, 0, Math.PI * 2);
-      leafCtx.fill();
-      leafCtx.globalAlpha = lf.alpha * 0.6;
-      leafCtx.strokeStyle = '#8a6a00';
-      leafCtx.lineWidth = 1;
-      leafCtx.beginPath();
-      leafCtx.moveTo(-lf.r * 1.5, 0);
-      leafCtx.lineTo(lf.r * 1.5, 0);
-      leafCtx.stroke();
+      leafCtx.save(); leafCtx.translate(lf.x, lf.y); leafCtx.rotate(lf.rot);
+      leafCtx.globalAlpha = lf.alpha; leafCtx.fillStyle = lf.color;
+      leafCtx.beginPath(); leafCtx.ellipse(0, 0, lf.r * 1.7, lf.r * 0.7, 0, 0, Math.PI * 2); leafCtx.fill();
+      leafCtx.globalAlpha = lf.alpha * 0.6; leafCtx.strokeStyle = '#8a6a00';
+      leafCtx.lineWidth = 1; leafCtx.beginPath(); leafCtx.moveTo(-lf.r * 1.5, 0); leafCtx.lineTo(lf.r * 1.5, 0); leafCtx.stroke();
       leafCtx.restore();
     }
   }
 
-  function leafLoop() {
-    updateLeaves();
-    drawLeaves();
-    requestAnimationFrame(leafLoop);
-  }
+  function leafLoop() { updateLeaves(); drawLeaves(); requestAnimationFrame(leafLoop); }
+  window.addEventListener('resize', () => { resizeLeaves(); makeLeaves(); });
+  resizeLeaves(); makeLeaves(); leafLoop();
 
-  window.addEventListener('resize', () => {
-    resizeLeaves();
-    makeLeaves();
-  });
-
-  resizeLeaves();
-  makeLeaves();
-  leafLoop();
-
-  /* ================= ФОНОВЫЙ ЗВУК (ПО ПЕРВОМУ КЛИКУ) ================= */
-  const audio = document.getElementById('bg-audio');
-  const soundToggle = document.getElementById('sound-toggle');
-  let isAudioStarted = false;
-
-  audio.volume = 0.4;
-
-  // Функция обновления иконки
-  function updateSoundIcon() {
-    if (!audio.paused) {
-      soundToggle.textContent = '🔊';
-      soundToggle.style.background = '#2e7d32'; // Зеленый
-    } else {
-      soundToggle.textContent = '🔇';
-      soundToggle.style.background = '#8a4a18'; // Коричневый
-    }
-  }
-
-  // Запуск при первом касании/клике где угодно
-  function startAudioOnFirstTap() {
-    if (isAudioStarted) return;
-    isAudioStarted = true;
-    
-    audio.play().then(() => {
-      updateSoundIcon();
-    }).catch((error) => {
-      console.warn('Браузер заблокировал звук:', error);
-      updateSoundIcon();
-    });
-  }
-
-  // Слушаем первый тап на экран (и телефон, и компьютер)
-  document.addEventListener('touchstart', startAudioOnFirstTap, { once: true, passive: true });
-  document.addEventListener('mousedown', startAudioOnFirstTap, { once: true });
-  document.addEventListener('keydown', startAudioOnFirstTap, { once: true }); // если начнут вводить пароль с клавиатуры
-
-  // Кнопка в шапке (включить/выключить вручную)
-  soundToggle.addEventListener('click', (e) => {
-    e.stopPropagation(); // Чтобы не срабатывал тап по экрану еще раз
-    if (audio.paused) {
-      audio.play().then(updateSoundIcon).catch(console.warn);
-    } else {
-      audio.pause();
-      updateSoundIcon();
-    }
-  });
-
-  // Синхронизация иконки
-  audio.addEventListener('play', updateSoundIcon);
-  audio.addEventListener('pause', updateSoundIcon);
-
-  updateSoundIcon();
   setTimeout(() => input.focus(), 300);
 </script>
 </body>
